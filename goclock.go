@@ -11,14 +11,22 @@ import (
 
 const clearCode string = "\033[H\033[2J"
 
-var colorCode = map[string]string{
-	"red":     "\u001b[41m",
-	"green":   "\u001b[42m",
-	"yellow":  "\u001b[43m",
-	"blue":    "\u001b[44m",
-	"magenta": "\u001b[45m",
-	"cyan":    "\u001b[46m",
-	"white":   "\u001b[47m",
+var colorCode = map[string]int{
+	"red":     31,
+	"green":   32,
+	"yellow":  33,
+	"blue":    34,
+	"magenta": 35,
+	"cyan":    36,
+	"white":   37,
+}
+
+func getColorCode(color string, bg bool) string {
+	if bg {
+		return "\u001b[" + fmt.Sprint(colorCode[color]+10) + "m"
+	} else {
+		return "\u001b[" + fmt.Sprint(colorCode[color]) + "m"
+	}
 }
 
 var full = [6]bool{true, true, true, true, true, true}
@@ -45,7 +53,8 @@ func main() {
 	var colorFlag = flag.String("color", "white", "The color to use.\nOptions: 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'")
 	var centerFlag = flag.Bool("center", false, "Center the clock on the terminal.")
 	flag.Parse()
-	var color = colorCode[*colorFlag]
+	var bgColor = getColorCode(*colorFlag, true)
+	var color = getColorCode(*colorFlag, false)
 
 	for {
 		var xOffset = ""
@@ -54,20 +63,23 @@ func main() {
 			var x, _ = terminal.Width()
 			var y, _ = terminal.Height()
 			xOffset = strings.Repeat(" ", int(x/2-19))
-			yOffset = strings.Repeat("\n", int(y/2-3))
+			yOffset = strings.Repeat("\n", int(y/2-2))
 		}
 
-		var currentTime = time.Now().Format("15:04") //hh:mm
-		//var currentTime = "0123456789:" //test font
+		var currentTime = time.Now()
+		var formattedTime = currentTime.Format("15:04")           //hh:mm
+		var formattedDate = currentTime.Format("_2 January 2006") //day month year
+
+		//var formattedTime = "0123456789:" //test font
 
 		var output = yOffset
 
 		for i := 0; i < 5; i++ {
 			output += xOffset
-			for _, c := range currentTime {
+			for _, c := range formattedTime {
 				for ii := 0; ii < 6; ii++ {
 					if characters[c][i][ii] {
-						output += color + " \u001b[0m"
+						output += bgColor + " \u001b[0m"
 					} else {
 						output += " "
 					}
@@ -76,6 +88,7 @@ func main() {
 			}
 			output += "\n"
 		}
+		output += "\n" + color + xOffset + formattedDate
 
 		fmt.Print(
 			clearCode,
